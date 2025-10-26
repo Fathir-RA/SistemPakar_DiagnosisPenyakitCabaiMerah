@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pakar Penyakit Cabai</title>
+    <style>
+        /* CSS Sederhana untuk sementara */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        h1 { color: #d32f2f; }
+        #app-container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #gejala-container { margin-bottom: 20px; }
+        .gejala-item { margin-bottom: 12px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; display: flex; align-items: center; justify-content: space-between; }
+        .gejala-item label { flex-grow: 1; margin-left: 10px; }
+        select { margin-left: 10px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
+        button { font-size: 16px; padding: 10px 15px; background-color: #d32f2f; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #b71c1c; }
+        #hasil-container { margin-top: 20px; border-top: 2px solid #d32f2f; padding-top: 10px; }
+        #hasil-loading { display: none; }
+        .hasil-item { font-size: 1.1em; font-weight: bold; margin-bottom: 8px; }
+        .hasil-item span { font-weight: normal; color: #333; }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <h1>Sistem Pakar Diagnosis Penyakit Cabai Merah</h1>
+        <p>Silakan pilih gejala yang terlihat pada tanaman cabai Anda dan tentukan tingkat keyakinan Anda.</p>
+
+        <div id="gejala-container">
+            <p id="gejala-loading">Memuat daftar gejala...</p>
+        </div>
+
+        <button id="btn-diagnosis">Mulai Diagnosis</button>
+
+        <h2>Hasil Diagnosis:</h2>
+        <div id="hasil-container">
+            <p id="hasil-placeholder">Silakan pilih gejala dan klik tombol "Mulai Diagnosis".</p>
+            <div id="hasil-loading">Menghitung hasil...</div>
+            <div id="hasil-list">
+                </div>
+        </div>
+    </div>
+
+    <script src="../inference_engine/engine.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
