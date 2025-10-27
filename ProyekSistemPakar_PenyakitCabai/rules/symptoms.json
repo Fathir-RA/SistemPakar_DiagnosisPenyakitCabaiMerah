@@ -19,6 +19,7 @@
   {"id": "G18", "name": "Tanaman tidak berbuah", "cf_pakar": 0.2},
   {"id": "G19", "name": "Tangkai berwarna coklat kehitaman", "cf_pakar": 0.4},
   {"id": "G20", "name": "Daun memutih dan menebal", "cf_pakar": 0.2},
-  {"id": "G21", "name": "Daun menguning", "cf_pakar": 0.4},
+  {"id": "G21", "name": "Beberapa Daun menguning", "cf_pakar": 0.4},
   {"id": "G22", "name": "Ukuran daun lebih kecil", "cf_pakar": 0.6}
 ]
+
