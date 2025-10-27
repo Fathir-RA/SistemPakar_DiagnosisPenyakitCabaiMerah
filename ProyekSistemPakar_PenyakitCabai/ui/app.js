@@ -1,164 +1,331 @@
-// Menunggu sampai seluruh konten HTML dimuat
+// Tunggu sampai semua elemen HTML dimuat
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- 1. DEFINISI ELEMEN UI & PATH DATA ---
+    // --- 1. AMBIL REFERENSI ELEMEN ---
     
-    // Path ke file JSON Anda (sesuai struktur folder 'rules/')
-    const SYMPTOMS_PATH = '../rules/symptoms.json';
-    const RULES_PATH = '../rules/rules.json';
-    const DISEASES_PATH = '../rules/diseases.json';
+    // Empat "Page" utama
+    const pageSelamatDatang = document.getElementById('page-selamat-datang');
+    const pagePilihGejala = document.getElementById('page-pilih-gejala');
+    const pageTingkatKeyakinan = document.getElementById('page-tingkat-keyakinan');
+    const pageHasil = document.getElementById('page-hasil');
 
-    // Ambil elemen dari HTML
+    // Tombol-tombol navigasi
+    const btnMulai = document.getElementById('btn-mulai');
+    const btnLanjutKeyakinan = document.getElementById('btn-lanjut-keyakinan');
+    const btnDiagnosis = document.getElementById('btn-diagnosis');
+    const btnDiagnosisLagi = document.getElementById('btn-diagnosis-lagi');
+
+    // Kontainer dinamis
     const gejalaContainer = document.getElementById('gejala-container');
     const gejalaLoading = document.getElementById('gejala-loading');
-    const btnDiagnosis = document.getElementById('btn-diagnosis');
-    const hasilPlaceholder = document.getElementById('hasil-placeholder');
-    const hasilLoading = document.getElementById('hasil-loading');
-    const hasilList = document.getElementById('hasil-list');
+    const gejalaError = document.getElementById('gejala-error');
     
-    // Variabel untuk menyimpan data yang dimuat
-    let allSymptoms = [];
+    const keyakinanContainer = document.getElementById('keyakinan-container');
+    const keyakinanError = document.getElementById('keyakinan-error');
+
+    const hasilList = document.getElementById('hasil-list');
+    const hasilLoading = document.getElementById('hasil-loading');
+    const hasilPlaceholder = document.getElementById('hasil-placeholder');
+    
+    // --- 2. VARIABEL GLOBAL (STATE) ---
+
+    // Variabel untuk menyimpan data dari JSON
+    let allGejala = [];
     let allRules = [];
     let allDiseases = [];
+    
+    // Variabel untuk menyimpan pilihan user
+    let selectedGejalaObjects = [];
+    let finalUserInput = []; // Ini akan jadi 'inputPengguna' untuk engine
 
-    // --- 2. FUNGSI UNTUK MEMUAT DATA GEJALA ---
+    // --- 3. LOGIKA NAVIGASI (PINDAH HALAMAN) ---
 
-    /**
-     * Memuat daftar gejala dari symptoms.json dan menampilkannya di UI
-     */
-    async function loadGejala() {
-        try {
-            const response = await fetch(SYMPTOMS_PATH);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            allSymptoms = await response.json();
-            
-            // Sembunyikan pesan "loading"
-            gejalaLoading.style.display = 'none';
-            
-            // Tampilkan setiap gejala ke UI
-            allSymptoms.forEach(symptom => {
-                const item = document.createElement('div');
-                item.className = 'gejala-item';
-                
-                // HTML untuk satu item gejala
-                item.innerHTML = `
-                    <input type="checkbox" id="${symptom.id}" value="${symptom.id}" data-cf-pakar="${symptom.cf_pakar}">
-                    <label for="${symptom.id}">${symptom.name} (${symptom.id})</label>
-                    <select id="cf_user_${symptom.id}">
-                        <option value="0.0">Pilih Keyakinan</option>
-                        <option value="0.2">Tidak Yakin</option>
-                        <option value="0.4">Cukup Yakin</option>
-                        <option value="0.6">Yakin</option>
-                        <option value="0.8">Sangat Yakin</option>
-                        <option value="1.0">Pasti</option>
-                    </select>
-                `;
-                gejalaContainer.appendChild(item);
-            });
+    function showPage(pageIdToShow) {
+        // Sembunyikan semua page dulu
+        pageSelamatDatang.style.display = 'none';
+        pagePilihGejala.style.display = 'none';
+        pageTingkatKeyakinan.style.display = 'none';
+        pageHasil.style.display = 'none';
 
-        } catch (error) {
-            gejalaLoading.textContent = 'Gagal memuat daftar gejala. Cek file symptoms.json dan path-nya.';
-            console.error('Error memuat gejala:', error);
+        // Tampilkan page yang diminta
+        const pageToShow = document.getElementById(pageIdToShow);
+        if (pageToShow) {
+            pageToShow.style.display = 'block';
         }
     }
 
-    /**
-     * Fungsi untuk memuat data (aturan dan penyakit)
-     * Kita memuatnya saat startup agar siap digunakan saat diagnosis
-     */
-    async function loadDataLain() {
-        try {
-            const rulesResponse = await fetch(RULES_PATH);
-            allRules = await rulesResponse.json();
-            
-            const diseasesResponse = await fetch(DISEASES_PATH);
-            allDiseases = await diseasesResponse.json();
-
-            console.log("Aturan dan Penyakit berhasil dimuat.");
-        } catch (error) {
-            console.error('Error memuat data aturan/penyakit:', error);
-            hasilPlaceholder.textContent = 'Gagal memuat data sistem. Tidak dapat melakukan diagnosis.';
-            btnDiagnosis.disabled = true;
+    // --- 4. EVENT LISTENER UNTUK TOMBOL ---
+    
+    // Tombol "Mulai" (Fase 1 -> Fase 2)
+    btnMulai.addEventListener('click', () => {
+        showPage('page-pilih-gejala');
+        // Panggil fungsi untuk memuat gejala (hanya jika belum dimuat)
+        if (allGejala.length === 0) {
+            loadGejala(); 
         }
-    }
+    });
 
-    // --- 3. FUNGSI UNTUK PROSES DIAGNOSIS ---
+    // Tombol "Lanjut" (Fase 2 -> Fase 3)
+    btnLanjutKeyakinan.addEventListener('click', () => {
+        // 1. Kumpulkan gejala yang dicentang
+        const checkedGejalaIds = [];
+        gejalaContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+            checkedGejalaIds.push(cb.dataset.id);
+        });
 
-    /**
-     * Fungsi ini akan dipanggil ketika tombol "Mulai Diagnosis" diklik
-     */
-    function mulaiDiagnosis() {
-        console.log("Diagnosis dimulai...");
-        hasilPlaceholder.style.display = 'none';
-        hasilList.innerHTML = ''; // Kosongkan hasil sebelumnya
-        hasilLoading.style.display = 'block'; // Tampilkan "Menghitung hasil..."
+        // 2. Validasi: Cek apakah user memilih setidaknya 1 gejala
+        if (checkedGejalaIds.length === 0) {
+            gejalaError.style.display = 'block';
+            return;
+        } else {
+            gejalaError.style.display = 'none';
+        }
 
-        // 1. Kumpulkan input pengguna (gejala yang dipilih dan nilai CF User-nya)
-        const inputPengguna = [];
-        const checkboxes = gejalaContainer.querySelectorAll('input[type="checkbox"]:checked');
+        // 3. Simpan objek gejala yang dipilih ke variabel global
+        // (Kita pakai String() untuk memastikan tipe datanya cocok)
+        selectedGejalaObjects = allGejala.filter(gejala => 
+            checkedGejalaIds.includes(String(gejala.id)) 
+        );
+
+        // 4. Render halaman keyakinan berdasarkan gejala yang dipilih
+        renderKeyakinan();
         
-        checkboxes.forEach(checkbox => {
-            const id = checkbox.value;
-            const cfUserSelect = document.getElementById(`cf_user_${id}`);
-            const cfUser = parseFloat(cfUserSelect.value);
+        // 5. Pindah ke halaman keyakinan
+        showPage('page-tingkat-keyakinan');
+    });
+
+    // Tombol "Mulai Diagnosis" (Fase 3 -> Fase 4)
+    btnDiagnosis.addEventListener('click', () => {
+        // 1. Kumpulkan input CF dari user
+        finalUserInput = []; // Kosongkan dulu
+        let semuaCfTerisi = true;
+
+        selectedGejalaObjects.forEach(gejala => {
+            const cfUser = parseFloat(document.getElementById(`cf-${gejala.id}`).value);
             
-            if (cfUser > 0) { // Hanya proses jika pengguna memilih keyakinan
-                const cfPakar = parseFloat(checkbox.getAttribute('data-cf-pakar'));
-                inputPengguna.push({
-                    id: id,
-                    cf_pakar: cfPakar,
-                    cf_user: cfUser
+            if (cfUser === 0) { // Jika user memilih "Pilih Keyakinan" (value 0)
+                semuaCfTerisi = false;
+            } else {
+                // 'gejala' di sini adalah objek lengkap from selectedGejalaObjects
+                // Ia sudah punya .id, .name, dan .cf_pakar
+                finalUserInput.push({ 
+                    id: gejala.id, 
+                    cf_pakar: gejala.cf_pakar, // <-- Data dari symptoms.json
+                    cf_user: cfUser             // <-- Data dari dropdown
                 });
             }
         });
 
-        if (inputPengguna.length === 0) {
+        // 2. Validasi: Cek apakah semua dropdown sudah diisi
+        if (!semuaCfTerisi) {
+            keyakinanError.style.display = 'block';
+            return;
+        } else {
+            keyakinanError.style.display = 'none';
+        }
+
+        // 3. Tampilkan UI loading
+        hasilLoading.style.display = 'block';
+        hasilList.innerHTML = ''; // Kosongkan hasil lama
+        hasilPlaceholder.style.display = 'none';
+
+        // 4. Pindah ke halaman hasil
+        showPage('page-hasil'); 
+        
+        // 5. Panggil fungsi diagnosis (beri delay sedikit agar loading terlihat)
+        setTimeout(runDiagnosis, 500); 
+    });
+
+    // Tombol "Diagnosis Ulang" (Fase 4 -> Fase 2)
+    btnDiagnosisLagi.addEventListener('click', () => {
+        // Reset UI
+        gejalaContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        keyakinanContainer.innerHTML = ''; // Kosongkan dropdown
+        hasilList.innerHTML = '';
+        hasilPlaceholder.style.display = 'block';
+
+        // Reset Umpan Balik Visual
+        gejalaContainer.querySelectorAll('.gejala-item.terpilih').forEach(item => {
+            item.classList.remove('terpilih');
+        });
+        
+        // Reset State
+        selectedGejalaObjects = [];
+        finalUserInput = [];
+
+        // Kembali ke halaman pilih gejala
+        showPage('page-pilih-gejala');
+    });
+
+
+    // --- 5. LOGIKA APLIKASI INTI (MEMUAT, MERENDER, MENGHITUNG) ---
+    
+    /**
+     * Memuat daftar gejala dari symptoms.json
+     */
+    async function loadGejala() {
+        gejalaLoading.style.display = 'block'; // Tampilkan "Memuat..."
+        try {
+            const response = await fetch('../rules/symptoms.json'); 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            allGejala = await response.json();
+            
+            // Sembunyikan loading, tampilkan gejala
+            gejalaLoading.style.display = 'none';
+            renderGejala();
+
+        } catch (error) {
+            console.error('Error memuat gejala:', error);
+            gejalaLoading.textContent = 'Gagal memuat daftar gejala. Cek console (F12) untuk detail.';
+        }
+    }
+
+    /**
+     * (BARU) Memuat data inti (Aturan & Penyakit) saat aplikasi pertama kali dibuka
+     */
+    async function loadCoreData() {
+        try {
+            const rulesResponse = await fetch('../rules/rules.json');
+            allRules = await rulesResponse.json();
+
+            const diseasesResponse = await fetch('../rules/diseases.json');
+            allDiseases = await diseasesResponse.json();
+            
+            console.log("Data Aturan & Penyakit siap.");
+        } catch (error) {
+            console.error('Error memuat data inti (aturan/penyakit):', error);
+            // Nonaktifkan aplikasi jika data inti gagal dimuat
+            pageSelamatDatang.innerHTML = '<h1>Error</h1><p>Gagal memuat data inti (rules.json / diseases.json). Aplikasi tidak dapat berjalan. Cek path file di F12 Console.</p>';
+        }
+    }
+
+
+    /**
+     * Menampilkan gejala ke HTML (HANYA CHECKBOX)
+     */
+    function renderGejala() {
+        gejalaContainer.innerHTML = ''; // Hapus pesan "Memuat..."
+        
+        allGejala.forEach(gejala => {
+            const item = document.createElement('div');
+            item.className = 'gejala-item';
+            
+            // Pastikan menggunakan .name (sesuai file JSON Anda)
+            item.innerHTML = `
+                <input type="checkbox" id="${gejala.id}" data-id="${gejala.id}">
+                <label for="${gejala.id}">${gejala.name} (${gejala.id})</label>
+            `;
+
+            // Logika Umpan Balik Visual
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            
+            checkbox.addEventListener('change', () => {
+                item.classList.toggle('terpilih', checkbox.checked);
+            });
+
+            item.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'INPUT') {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change')); 
+                }
+            });
+
+            gejalaContainer.appendChild(item);
+        });
+    }
+
+    /**
+     * Menampilkan dropdown keyakinan berdasarkan gejala yang dipilih
+     */
+    function renderKeyakinan() {
+        keyakinanContainer.innerHTML = ''; // Hapus isi lama
+        keyakinanError.style.display = 'none'; // Sembunyikan pesan error
+
+        selectedGejalaObjects.forEach(gejala => {
+            const item = document.createElement('div');
+            item.className = 'gejala-item';
+            
+            // Pastikan menggunakan .name (sesuai file JSON Anda)
+            item.innerHTML = `
+                <label for="cf-${gejala.id}">${gejala.name} (${gejala.id})</label>
+                <select id="cf-${gejala.id}" data-cf-id="${gejala.id}">
+                    <option value="0">Pilih Keyakinan</option>
+                    <option value="0.2">Tidak Yakin (20%)</option>
+                    <option value="0.4">Cukup Yakin (40%)</option>
+                    <option value="0.6">Yakin (60%)</option>
+                    <option value="0.8">Sangat Yakin (80%)</option>
+                    <option value="1.0">Pasti (100%)</option>
+                </select>
+            `;
+            keyakinanContainer.appendChild(item);
+        });
+    }
+
+
+    /**
+     * Menjalankan diagnosis saat tombol diklik
+     */
+    function runDiagnosis() {
+        // Cek jika engine.js sudah dimuat dan menyediakan fungsinya
+        if (typeof jalankanInferenceEngine === 'undefined') {
+            console.error('fungsi jalankanInferenceEngine tidak ditemukan! Pastikan engine.js dimuat SEBELUM app.js');
+            hasilList.innerHTML = '<p style="color: red;">Error: Gagal memuat inference engine. Cek console (F12).</p>';
             hasilLoading.style.display = 'none';
-            hasilList.innerHTML = '<p>Anda belum memilih gejala atau menentukan tingkat keyakinan.</p>';
             return;
         }
 
-        console.log("Input Pengguna:", inputPengguna);
+        try {
+            // Panggil fungsi global dari engine.js
+            // Kirim data input (format: [{id, cf_pakar, cf_user},...])
+            // Kirim data aturan (dari rules.json)
+            const hasil = jalankanInferenceEngine(finalUserInput, allRules); 
+            
+            renderHasil(hasil);
 
-        // 2. Panggil Inference Engine (yang akan kita buat di engine.js)
-        // Kita akan membuat fungsi ini di langkah berikutnya.
-        // Untuk sekarang, kita buat tiruannya dulu.
-        const hasilDiagnosis = jalankanInferenceEngine(inputPengguna, allRules);
+        } catch (error) {
+            console.error('Error saat diagnosis:', error);
+            hasilLoading.style.display = 'none';
+            hasilList.innerHTML = '<p style="color: red;">Terjadi error saat menghitung diagnosis. Cek console (F12).</p>';
+        }
+    }
 
-        // 3. Tampilkan hasil
+    /**
+     * Menampilkan hasil diagnosis ke HTML
+     */
+    function renderHasil(hasil) {
         hasilLoading.style.display = 'none';
-        
-        if (hasilDiagnosis.length === 0) {
-            hasilList.innerHTML = '<p>Tidak ada penyakit yang terdeteksi berdasarkan gejala yang dipilih.</p>';
+        hasilList.innerHTML = ''; 
+
+        if (!hasil || hasil.length === 0) {
+            hasilList.innerHTML = '<p>Tidak ada penyakit yang terdeteksi berdasarkan kombinasi gejala yang dipilih.</p>';
             return;
         }
 
         // Urutkan hasil dari CF tertinggi
-        hasilDiagnosis.sort((a, b) => b.cf - a.cf);
+        hasil.sort((a, b) => b.cf - a.cf);
 
-        hasilDiagnosis.forEach(hasil => {
-            // Cari nama penyakit dari allDiseases
-            const penyakit = allDiseases.find(p => p.id === hasil.id);
-            const namaPenyakit = penyakit ? penyakit.name : hasil.id;
-            const persentase = (hasil.cf * 100).toFixed(2); // Ubah ke persen
-
+        hasil.forEach(penyakitHasil => {
             const item = document.createElement('div');
             item.className = 'hasil-item';
-            item.innerHTML = `${namaPenyakit}: <span>${persentase}%</span>`;
+            
+            // Cari nama penyakit di 'allDiseases' berdasarkan ID
+            const penyakitInfo = allDiseases.find(p => String(p.id) === String(penyakitHasil.id));
+            const namaPenyakit = penyakitInfo ? penyakitInfo.name : penyakitHasil.id; // Ambil .name
+            
+            const persentase = (penyakitHasil.cf * 100).toFixed(2);
+            
+            item.innerHTML = `
+                ${namaPenyakit} 
+                <span>: ${persentase}% (${penyakitHasil.cf.toFixed(3)})</span>
+            `;
             hasilList.appendChild(item);
         });
-
     }
 
-    // --- 4. EVENT LISTENER ---
-    
-    // Panggil fungsi untuk memuat gejala dan data lain saat halaman dibuka
-    loadGejala();
-    loadDataLain();
-    
-    // Tambahkan event listener ke tombol diagnosis
-    btnDiagnosis.addEventListener('click', mulaiDiagnosis);
+    // --- 6. INISIALISASI ---
+    loadCoreData(); // Muat data aturan & penyakit
+    showPage('page-selamat-datang'); // Tampilkan halaman pertama
 
-});
+}); // Akhir dari DOMContentLoaded
