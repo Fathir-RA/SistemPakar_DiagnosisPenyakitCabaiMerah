@@ -1,4 +1,3 @@
-// Tunggu sampai semua elemen HTML dimuat
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. AMBIL REFERENSI ELEMEN ---
@@ -14,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnLanjutKeyakinan = document.getElementById('btn-lanjut-keyakinan');
     const btnDiagnosis = document.getElementById('btn-diagnosis');
     const btnDiagnosisLagi = document.getElementById('btn-diagnosis-lagi');
+    const btnKembaliGejala = document.getElementById('btn-kembali-gejala'); // Tombol Kembali
 
     // Kontainer dinamis
     const gejalaContainer = document.getElementById('gejala-container');
@@ -82,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 3. Simpan objek gejala yang dipilih ke variabel global
-        // (Kita pakai String() untuk memastikan tipe datanya cocok)
         selectedGejalaObjects = allGejala.filter(gejala => 
             checkedGejalaIds.includes(String(gejala.id)) 
         );
@@ -92,6 +91,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 5. Pindah ke halaman keyakinan
         showPage('page-tingkat-keyakinan');
+    });
+
+    // Tombol "Kembali" (Fase 3 -> Fase 2)
+    btnKembaliGejala.addEventListener('click', () => {
+        // Cukup kembali ke halaman pilih gejala
+        // Pilihan centang masih tersimpan di sana
+        showPage('page-pilih-gejala');
     });
 
     // Tombol "Mulai Diagnosis" (Fase 3 -> Fase 4)
@@ -106,8 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cfUser === 0) { // Jika user memilih "Pilih Keyakinan" (value 0)
                 semuaCfTerisi = false;
             } else {
-                // 'gejala' di sini adalah objek lengkap from selectedGejalaObjects
-                // Ia sudah punya .id, .name, dan .cf_pakar
                 finalUserInput.push({ 
                     id: gejala.id, 
                     cf_pakar: gejala.cf_pakar, // <-- Data dari symptoms.json
@@ -132,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Pindah ke halaman hasil
         showPage('page-hasil'); 
         
-        // 5. Panggil fungsi diagnosis (beri delay sedikit agar loading terlihat)
+        // 5. Panggil fungsi diagnosis
         setTimeout(runDiagnosis, 500); 
     });
 
@@ -183,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (BARU) Memuat data inti (Aturan & Penyakit) saat aplikasi pertama kali dibuka
+     * Memuat Aturan & Penyakit saat aplikasi pertama kali dibuka
      */
     async function loadCoreData() {
         try {
@@ -203,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /**
-     * Menampilkan gejala ke HTML (HANYA CHECKBOX)
+     * Menampilkan gejala ke HTML
      */
     function renderGejala() {
         gejalaContainer.innerHTML = ''; // Hapus pesan "Memuat..."
@@ -212,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = 'gejala-item';
             
-            // Pastikan menggunakan .name (sesuai file JSON Anda)
             item.innerHTML = `
                 <input type="checkbox" id="${gejala.id}" data-id="${gejala.id}">
                 <label for="${gejala.id}">${gejala.name} (${gejala.id})</label>
@@ -247,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = 'gejala-item';
             
-            // Pastikan menggunakan .name (sesuai file JSON Anda)
             item.innerHTML = `
                 <label for="cf-${gejala.id}">${gejala.name} (${gejala.id})</label>
                 <select id="cf-${gejala.id}" data-cf-id="${gejala.id}">
@@ -278,8 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Panggil fungsi global dari engine.js
-            // Kirim data input (format: [{id, cf_pakar, cf_user},...])
-            // Kirim data aturan (dari rules.json)
             const hasil = jalankanInferenceEngine(finalUserInput, allRules); 
             
             renderHasil(hasil);
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Cari nama penyakit di 'allDiseases' berdasarkan ID
             const penyakitInfo = allDiseases.find(p => String(p.id) === String(penyakitHasil.id));
-            const namaPenyakit = penyakitInfo ? penyakitInfo.name : penyakitHasil.id; // Ambil .name
+            const namaPenyakit = penyakitInfo ? penyakitInfo.name : penyakitHasil.id;
             
             const persentase = (penyakitHasil.cf * 100).toFixed(2);
             
@@ -328,4 +328,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCoreData(); // Muat data aturan & penyakit
     showPage('page-selamat-datang'); // Tampilkan halaman pertama
 
-}); // Akhir dari DOMContentLoaded
+}); 
