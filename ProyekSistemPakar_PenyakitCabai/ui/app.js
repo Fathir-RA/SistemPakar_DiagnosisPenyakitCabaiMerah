@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Variabel untuk menyimpan pilihan user
     let selectedGejalaObjects = [];
-    let finalUserInput = []; // Ini akan jadi 'inputPengguna' untuk engine
+    let finalUserInput = []; // inputPengguna untuk engine
 
     // --- 3. LOGIKA NAVIGASI (PINDAH HALAMAN) ---
 
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tombol "Mulai" (Fase 1 -> Fase 2)
     btnMulai.addEventListener('click', () => {
         showPage('page-pilih-gejala');
-        // Panggil fungsi untuk memuat gejala (hanya jika belum dimuat)
+        // Panggil fungsi hanya jika belum dimuat
         if (allGejala.length === 0) {
             loadGejala(); 
         }
@@ -215,11 +215,13 @@ document.addEventListener('DOMContentLoaded', () => {
         allGejala.forEach(gejala => {
             const item = document.createElement('div');
             item.className = 'gejala-item';
-            
+
+            // 'for' dihapus dari tag <label>
             item.innerHTML = `
                 <input type="checkbox" id="${gejala.id}" data-id="${gejala.id}">
-                <label for="${gejala.id}">${gejala.name} (${gejala.id})</label>
+                <label>${gejala.name} (${gejala.id})</label>
             `;
+            // =============================
 
             // Logika Umpan Balik Visual
             const checkbox = item.querySelector('input[type="checkbox"]');
@@ -229,7 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             item.addEventListener('click', (e) => {
-                if (e.target.tagName !== 'INPUT') {
+                // Tidak jalankan jika yang diklik adalah checkbox-nya sendiri
+                if (e.target.tagName !== 'INPUT') { 
                     checkbox.checked = !checkbox.checked;
                     checkbox.dispatchEvent(new Event('change')); 
                 }
@@ -307,20 +310,24 @@ document.addEventListener('DOMContentLoaded', () => {
         hasil.sort((a, b) => b.cf - a.cf);
 
         hasil.forEach(penyakitHasil => {
-            const item = document.createElement('div');
-            item.className = 'hasil-item';
-            
-            // Cari nama penyakit di 'allDiseases' berdasarkan ID
+           const item = document.createElement('div');
+             item.className = 'hasil-item';
+
+             // Cari nama penyakit di 'allDiseases' berdasarkan ID
             const penyakitInfo = allDiseases.find(p => String(p.id) === String(penyakitHasil.id));
-            const namaPenyakit = penyakitInfo ? penyakitInfo.name : penyakitHasil.id;
-            
+             const namaPenyakit = penyakitInfo ? penyakitInfo.name : penyakitHasil.id;
+
             const persentase = (penyakitHasil.cf * 100).toFixed(2);
+            // --- MODIFIKASI DISINI ---
+            const nilaiCF = penyakitHasil.cf.toFixed(2); // Ubah dari toFixed(3) menjadi toFixed(2)
             
+            // Tambahkan teks "Nilai CF:"
             item.innerHTML = `
-                ${namaPenyakit} 
-                <span>: ${persentase}% (${penyakitHasil.cf.toFixed(3)})</span>
-            `;
-            hasilList.appendChild(item);
+              ${namaPenyakit} 
+              <span>: ${persentase}% (Nilai CF: ${nilaiCF})</span> 
+              `;
+            // -------------------------
+           hasilList.appendChild(item);
         });
     }
 
@@ -328,4 +335,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCoreData(); // Muat data aturan & penyakit
     showPage('page-selamat-datang'); // Tampilkan halaman pertama
 
-}); 
+});
