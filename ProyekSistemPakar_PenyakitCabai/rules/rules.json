@@ -1,42 +1,42 @@
 [
-    {
-      "id": "R_K001",
-      "if": ["G09", "G08", "G07", "G14", "G10"],
-      "then": "K001"
-    },
-    {
-      "id": "R_K002",
-      "if": ["G06", "G07", "G05", "G12", "G10"],
-      "then": "K002"
-    },
-    {
-      "id": "R_K003_A (Paralel)",
-      "if": ["G17", "G01"],
-      "then": "K003"
-    },
-    {
-      "id": "R_K003_B (Paralel)",
-      "if": ["G14", "G20"],
-      "then": "K003"
-    },
-    {
-      "id": "R_K004_A",
-      "if": ["G04", "G13", "G14", "G20", "G16", "G18"],
-      "then": "K004"
-    },
-    {
-      "id": "R_SEQ_K004_B (Sekuensial & Paralel)",
-      "if": ["K006", "G16"],
-      "then": "K004"
-    },
-    {
-      "id": "R_K005",
-      "if": ["G03", "G15", "G01", "G19", "G02"],
-      "then": "K005"
-    },
-    {
-      "id": "R_K006",
-      "if": ["G11", "G22", "G21", "G16"],
-      "then": "K006"
-    }
-  ]
+  {
+    "id": "R_K001_A (Asli & Paralel)",
+    "if": ["G09", "G08", "G07", "G14", "G10"],
+    "then": "K001"
+  },
+  {
+    "id": "R_K002 (Asli)",
+    "if": ["G06", "G07", "G05", "G12", "G10"],
+    "then": "K002"
+  },
+  {
+    "id": "R_K003 (Asli)",
+    "if": ["G17", "G01", "G14", "G20"],
+    "then": "K003"
+  },
+  {
+    "id": "R_K004_A (Asli & Paralel)",
+    "if": ["G04", "G13", "G14", "G20", "G16", "G18"],
+    "then": "K004"
+  },
+  {
+    "id": "R_K005 (Asli)",
+    "if": ["G03", "G15", "G01", "G19", "G02"],
+    "then": "K005"
+  },
+  {
+    "id": "R_K006 (Asli & Pemicu Sekuensial)",
+    "if": ["G11", "G22", "G21", "G16"],
+    "then": "K006"
+  },
+  {
+    "id": "R_K001_B (Tambahan & Paralel - Didukung Ref.)",
+    "if": ["G09", "G08"],
+    "then": "K001"
+  },
+  {
+    "id": "R_SEQ_K004_B (Tambahan & Sekuensial & Paralel - Didukung Ref.)",
+    "if": ["K006", "G14"],
+    "then": "K004"
+  }
+]
