@@ -1,0 +1,260 @@
+body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; 
+    padding: 20px; 
+    background-color: #f8f9fa;
+    color: #343a40;
+    line-height: 1.6;
+}
+
+/* --- Container Utama --- */
+#app-container {
+    max-width: 750px;
+    margin: 0 auto 30px auto; /* Margin atas 0, margin bawah 30px */
+    /* ======================= */
+    background: #ffffff;
+    padding: 35px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+}
+
+/* --- Judul --- */
+h1, h2 {
+    font-weight: 700;
+}
+
+h1 {
+    color: #c62828; /* Warna merah tua */
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 2.2em; /* Ukuran font H1 */
+}
+
+h2 {
+    border-bottom: 2px solid #dee2e6; /* Garis bawah lebih jelas */
+    padding-bottom: 10px;
+    margin-top: 35px; /* Jarak atas H2 */
+    margin-bottom: 20px;
+    color: #495057; /* Warna H2 */
+    font-size: 1.6em; /* Ukuran font H2 */
+}
+
+h2 i { /* Ikon di H2 */
+    margin-right: 8px;
+    color: #c62828; /* Warna ikon merah */
+}
+
+/* --- Aturan untuk Page/Fase --- */
+#page-pilih-gejala,
+#page-tingkat-keyakinan,
+#page-hasil {
+    display: none; /* Sembunyikan page lain secara default */
+}
+
+/* --- Styling untuk List Gejala & Keyakinan --- */
+#gejala-container,
+#keyakinan-container {
+    margin-bottom: 20px; /* Kurangi sedikit margin bawah */
+    max-height: 280px; /* Coba nilai yang jauh lebih kecil, misal 280px */
+    /* ======================= */
+    overflow-y: auto;
+    padding-right: 15px; /* Ruang untuk scrollbar */
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #fdfdfd;
+}
+
+.gejala-item {
+    margin-bottom: 12px;
+    padding: 12px 18px; /* Padding item */
+    border: 1px solid #dee2e6; /* Border item */
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.25s ease-in-out; /* Transisi untuk semua properti */
+    background-color: #fff;
+    cursor: pointer; /* Seluruh item bisa diklik */
+}
+
+.gejala-item label {
+    flex-grow: 1;
+    margin-left: 15px;
+    font-weight: 400;
+    color: #495057;
+    user-select: none; /* Teks tidak bisa diseleksi */
+}
+
+/* Checkbox */
+.gejala-item input[type="checkbox"] {
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    accent-color: #c62828; /* Warna centang */
+    flex-shrink: 0; /* Agar ukuran checkbox tidak menyusut */
+}
+
+/* Dropdown */
+select {
+    margin-left: 15px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ced4da; /* Warna border dropdown */
+    font-family: 'Poppins', sans-serif;
+    background-color: #f1f3f5; /* Background dropdown */
+    color: #495057;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+select:focus { /* Efek saat dropdown aktif */
+    outline: none;
+    border-color: #c62828;
+    box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.2);
+}
+
+
+/* --- Efek Hover dan Terpilih pada Item Gejala --- */
+.gejala-item:hover {
+    background-color: #fef4f4; /* Background hover */
+    border-color: #f5c6cb; /* Border hover */
+    transform: translateY(-2px); /* Efek sedikit naik */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06); /* Shadow halus */
+}
+
+.gejala-item.terpilih {
+    border-color: #c62828;
+    background-color: #fff1f1; /* Warna terpilih lebih jelas */
+    border-width: 1.5px;
+    box-shadow: 0 3px 6px rgba(198, 40, 40, 0.1); /* Shadow terpilih */
+}
+
+.gejala-item.terpilih label { /* Teks item terpilih jadi bold */
+    font-weight: 600;
+    color: #c62828;
+}
+
+/* --- Styling untuk Semua Tombol --- */
+button {
+    font-size: 16px;
+    padding: 12px 22px; /* Padding horizontal lebih besar */
+    background-color: #d32f2f; /* Warna tombol utama */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 20px; /* Spasi atas tombol */
+    margin-right: 10px;
+    transition: background-color 0.2s, transform 0.1s ease-out, box-shadow 0.2s;
+    transform-origin: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); /* Shadow tombol lebih jelas */
+    letter-spacing: 0.5px; /* Spasi antar huruf */
+}
+
+button i {
+    font-size: 1em; /* Ukuran ikon di tombol */
+}
+
+button:hover {
+    background-color: #b71c1c;
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2); /* Shadow hover lebih kuat */
+    transform: translateY(-1px); /* Efek naik sedikit saat hover */
+}
+
+/* === ANIMASI KLIK === */
+button:active {
+    transform: scale(0.96); /* Mengecil saat diklik */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); /* Shadow saat klik */
+    background-color: #a01919; /* Warna lebih gelap saat klik */
+}
+
+/* Tombol sekunder (Kembali & Diagnosis Ulang) */
+.btn-sekunder {
+    background-color: #6c757d; /* Warna Bootstrap */
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-sekunder:hover {
+    background-color: #5a6268; /* Warna hover */
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-sekunder:active {
+    background-color: #4e555b;
+    transform: scale(0.96);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Pesan Loading, Placeholder, Error, Hasil --- */
+#hasil-loading, #gejala-loading {
+    display: none;
+    padding: 20px 0; /* Padding loading lebih besar */
+    text-align: center;
+    color: #6c757d;
+    font-size: 1.1em;
+}
+
+#hasil-loading i, #gejala-loading i { /* Ikon loading */
+    margin-right: 8px;
+}
+
+
+#hasil-container {
+    margin-top: 25px;
+    padding-top: 20px;
+}
+
+.hasil-item {
+    font-size: 1.15em; /* Ukuran font hasil */
+    font-weight: 700;
+    margin-bottom: 12px;
+    padding: 15px; /* Padding hasil */
+    background-color: #f1f3f5; 
+    border-left: 5px solid #c62828; /* Garis kiri */
+    border-radius: 6px;
+    display: flex; /* spasi */
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hasil-item span {
+    font-weight: 400;
+    color: #495057;
+    font-size: 1em; /* Ukuran font nilai */
+    background-color: #e9ecef; /* Background nilai */
+    padding: 3px 8px; /* Padding nilai */
+    border-radius: 4px; /* Sudut nilai */
+    white-space: nowrap; /* Agar nilai tidak terpotong */
+}
+
+.info-text {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 0.95em;
+    margin-top: 10px;
+}
+
+/* Styling error */
+#gejala-error,
+#keyakinan-error {
+    display: none;
+    color: #721c24; /* Warna teks error */
+    font-weight: 600;
+    margin-top: 15px; /* Jarak pesan error */
+    padding: 12px 15px; /* Padding error */
+    background-color: #f8d7da; /* Background error */
+    border: 1px solid #f5c6cb; /* Border error */
+    border-radius: 6px;
+}
+
+#gejala-error i, #keyakinan-error i { /* Ikon error */
+    margin-right: 6px;
+}
