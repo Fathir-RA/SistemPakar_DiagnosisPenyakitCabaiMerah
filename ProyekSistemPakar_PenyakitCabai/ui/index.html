@@ -11,111 +11,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 
-    <style>
-        /* CSS Sederhana */
-        body { 
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            margin: 20px; 
-            background-color: #f4f4f4; 
-        }
-        
-        h1, h2 {
-            font-weight: 700;
-        }
-
-        h1 { color: #d32f2f; }
-        h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
-        #app-container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        /* --- Aturan untuk Page/Fase --- */
-        #page-pilih-gejala,
-        #page-tingkat-keyakinan,
-        #page-hasil {
-            display: none;
-        }
-
-        /* Styling untuk list gejala & keyakinan */
-        #gejala-container, 
-        #keyakinan-container { 
-            margin-bottom: 20px; 
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .gejala-item { 
-            margin-bottom: 12px; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 5px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between;
-            transition: background-color 0.2s, border-color 0.2s, border-width 0.2s, padding 0.2s;
-        }
-        .gejala-item label { flex-grow: 1; margin-left: 10px; font-weight: 400; }
-        select { margin-left: 10px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-family: 'Poppins', sans-serif;}
-
-        /* Umpan Balik Visual */
-        .gejala-item:hover {
-            background-color: #fcfcfc;
-            border-color: #b71c1c;
-            cursor: pointer;
-        }
-
-        .gejala-item.terpilih {
-            border-color: #d32f2f;
-            background-color: #fff8f8;
-            border-width: 2px;
-            padding: 9px;
-        }
-        
-        /* Styling untuk semua tombol */
-        button { 
-            font-size: 16px; 
-            padding: 10px 15px; 
-            background-color: #d32f2f; 
-            color: white; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer;
-            margin-top: 10px;
-            transition: transform 0.1s ease-out;
-            transform-origin: center;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px; 
-            font-family: 'Poppins', sans-serif;
-            font-weight: 600;
-        }
-        button:hover { background-color: #b71c1c; }
-        button:active {
-            transform: scale(0.95); 
-        }
-
-        /* Tombol sekunder (Kembali & Diagnosis Ulang) */
-        .btn-sekunder {
-            background-color: #555;
-        }
-        .btn-sekunder:hover {
-            background-color: #333;
-        }
-
-        /* Pesan Loading & Placeholder */
-        #hasil-loading, #gejala-loading, #keyakinan-loading { display: none; padding: 15px 0; }
-        .hasil-item { font-size: 1.1em; font-weight: 700; margin-bottom: 8px; }
-        .hasil-item span { font-weight: 400; color: #333; }
-        .info-text { color: #555; font-style: italic; }
-
-    </style>
+    <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
 
     <div id="app-container">
 
         <div id="page-selamat-datang">
-            <h1>Selamat Datang</h1>
-            <p>Aplikasi ini adalah sistem pakar untuk membantu mendiagnosis penyakit pada tanaman cabai merah berdasarkan gejala yang terlihat dan tingkat keyakinan (Certainty Factor) Anda.</p>
-            <p>Klik tombol di bawah untuk memulai diagnosis.</p>
+            <h1>Selamat Datang di Sistem Pakar Cabai! 🌶️</h1>
+            <p>Aplikasi ini membantu Anda mendiagnosis kemungkinan penyakit pada tanaman cabai merah berdasarkan gejala yang terlihat.</p>
+            <p>Sistem ini menggunakan metode <strong>Forward Chaining</strong> untuk penalaran dan <strong>Certainty Factor (CF)</strong> untuk mengukur tingkat keyakinan diagnosis.</p>
             <button id="btn-mulai">
                 <i class="fa-solid fa-play"></i> Mulai Diagnosis
             </button>
@@ -123,44 +28,54 @@
 
         <div id="page-pilih-gejala">
             <h1>Langkah 1: Pilih Gejala</h1>
-            <p>Silakan pilih (centang) semua gejala yang terlihat pada tanaman cabai Anda.</p>
+            <p>Centang <i class="fa-regular fa-square-check"></i> semua gejala yang Anda amati pada tanaman cabai.</p>
             <div id="gejala-container">
-                <p id="gejala-loading">Memuat daftar gejala...</p>
+                <p id="gejala-loading"><i class="fa-solid fa-spinner fa-spin"></i> Memuat daftar gejala...</p>
             </div>
-            <p id="gejala-error" class="info-text" style="display: none; color: red;">Anda harus memilih minimal satu gejala.</p>
-            <button id="btn-lanjut-keyakinan">Lanjut ke Tingkat Keyakinan</button>
+            <p id="gejala-error" class="info-text">
+                <i class="fa-solid fa-circle-exclamation"></i> Anda harus memilih minimal satu gejala.
+            </p>
+            <button id="btn-lanjut-keyakinan">
+                Lanjut <i class="fa-solid fa-arrow-right"></i>
+            </button>
         </div>
 
         <div id="page-tingkat-keyakinan">
-            <h1>Langkah 2: Tentukan Tingkat Keyakinan</h1>
+            <h1>Langkah 2: Tentukan Tingkat Keyakinan 🤔</h1>
             <p>Untuk setiap gejala yang Anda pilih, seberapa yakin Anda gejala tersebut benar-benar ada?</p>
             <div id="keyakinan-container">
                  </div>
-            <p id="keyakinan-error" class="info-text" style="display: none; color: red;">Anda harus memilih tingkat keyakinan (selain "Pilih Keyakinan") untuk semua gejala.</p>
+            <p id="keyakinan-error" class="info-text">
+                <i class="fa-solid fa-circle-exclamation"></i> Anda harus memilih tingkat keyakinan (selain "Pilih Keyakinan") untuk semua gejala.
+            </p>
             
             <button id="btn-kembali-gejala" class="btn-sekunder">
                 <i class="fa-solid fa-arrow-left"></i>
                 Kembali
             </button>
-            <button id="btn-diagnosis">Lihat Hasil Diagnosis</button>
+            <button id="btn-diagnosis">
+                <i class="fa-solid fa-magnifying-glass"></i> Lihat Hasil Diagnosis
+            </button>
         </div>
         
         <div id="page-hasil">
-            <h2>Hasil Diagnosis:</h2>
+            <h2><i class="fa-solid fa-notes-medical"></i> Hasil Diagnosis</h2>
             <div id="hasil-container">
-                <p id="hasil-placeholder" class="info-text">Silakan pilih gejala dan klik tombol "Mulai Diagnosis".</p>
-                <div id="hasil-loading">Menghitung hasil... ⌛</div>
+                <p id="hasil-placeholder" class="info-text">Hasil diagnosis akan ditampilkan di sini.</p>
+                <div id="hasil-loading">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Menghitung hasil...
+                </div>
                 <div id="hasil-list">
                     </div>
             </div>
             <button id="btn-diagnosis-lagi" class="btn-sekunder">
-                <i class="fa-solid fa-sync-alt"></i> Diagnosis Ulang
+                <i class="fa-solid fa-rotate-right"></i> Diagnosis Ulang
             </button>
         </div>
 
-    </div>
+    </div> 
 
-    <script src="../inference_engine/engine.js"></script> 
+    <script src="../inference_engine/engine.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
