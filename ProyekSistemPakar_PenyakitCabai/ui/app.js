@@ -96,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tombol "Kembali" (Fase 3 -> Fase 2)
     btnKembaliGejala.addEventListener('click', () => {
         // Cukup kembali ke halaman pilih gejala
-        // Pilihan centang masih tersimpan di sana
         showPage('page-pilih-gejala');
     });
 
@@ -109,13 +108,14 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedGejalaObjects.forEach(gejala => {
             const cfUser = parseFloat(document.getElementById(`cf-${gejala.id}`).value);
             
-            if (cfUser === 0) { // Jika user memilih "Pilih Keyakinan" (value 0)
+            // Validasi 'isNaN' Anda sudah bagus
+            if (isNaN(cfUser) || cfUser === 0) { // Jika user belum memilih (value 0)
                 semuaCfTerisi = false;
             } else {
                 finalUserInput.push({ 
                     id: gejala.id, 
-                    cf_pakar: gejala.cf_pakar, // <-- Data dari symptoms.json
-                    cf_user: cfUser             // <-- Data dari dropdown
+                    cf_pakar: gejala.cf_pakar, // Data dari symptoms.json
+                    cf_user: cfUser             // Data dari dropdown
                 });
             }
         });
@@ -136,8 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Pindah ke halaman hasil
         showPage('page-hasil'); 
         
-        // 5. Panggil fungsi diagnosis
-        setTimeout(runDiagnosis, 500); 
+        // 5. Panggil fungsi diagnosis langsung
+        runDiagnosis();
     });
 
     // Tombol "Diagnosis Ulang" (Fase 4 -> Fase 2)
@@ -216,14 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = 'gejala-item';
 
-            // 'for' dihapus dari tag <label>
+            // ===== PERBAIKAN 1: 'for' dihapus dari label =====
             item.innerHTML = `
                 <input type="checkbox" id="${gejala.id}" data-id="${gejala.id}">
                 <label>${gejala.name} (${gejala.id})</label>
             `;
-            // =============================
+            // =============================================
 
-            // Logika Umpan Balik Visual
             const checkbox = item.querySelector('input[type="checkbox"]');
             
             checkbox.addEventListener('change', () => {
@@ -231,7 +230,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             item.addEventListener('click', (e) => {
-                // Tidak jalankan jika yang diklik adalah checkbox-nya sendiri
                 if (e.target.tagName !== 'INPUT') { 
                     checkbox.checked = !checkbox.checked;
                     checkbox.dispatchEvent(new Event('change')); 
@@ -253,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = 'gejala-item';
             
+            // 'for' di sini tidak masalah, karena tidak ada item.addEventListener
             item.innerHTML = `
                 <label for="cf-${gejala.id}">${gejala.name} (${gejala.id})</label>
                 <select id="cf-${gejala.id}" data-cf-id="${gejala.id}">
@@ -270,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /**
-     * Menjalankan diagnosis saat tombol diklik
+     * Jalankan diagnosis saat tombol diklik (memanggil engine.js)
      */
     function runDiagnosis() {
         // Cek jika engine.js sudah dimuat dan menyediakan fungsinya
@@ -282,8 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            // ===== PERBAIKAN 2: Memanggil engine dengan 2 argumen =====
             // Panggil fungsi global dari engine.js
             const hasil = jalankanInferenceEngine(finalUserInput, allRules); 
+            // =======================================================
             
             renderHasil(hasil);
 
@@ -318,15 +319,12 @@ document.addEventListener('DOMContentLoaded', () => {
              const namaPenyakit = penyakitInfo ? penyakitInfo.name : penyakitHasil.id;
 
             const persentase = (penyakitHasil.cf * 100).toFixed(2);
-            // --- MODIFIKASI DISINI ---
-            const nilaiCF = penyakitHasil.cf.toFixed(2); // Ubah dari toFixed(3) menjadi toFixed(2)
+            const nilaiCF = penyakitHasil.cf.toFixed(4); // Menggunakan toFixed(4) Anda
             
-            // Tambahkan teks "Nilai CF:"
             item.innerHTML = `
               ${namaPenyakit} 
               <span>: ${persentase}% (Nilai CF: ${nilaiCF})</span> 
               `;
-            // -------------------------
            hasilList.appendChild(item);
         });
     }
