@@ -1,123 +1,110 @@
 /**
- * Menggabungkan dua nilai Certainty Factor (CF)
- * Ini adalah rumus inti dari paper 
- * CFcombine = CF1 + CF2 * (1 - CF1)
+ * inference_engine/engine.js
+ * Engine CF + Forward Chaining (mengikuti paper)
+ *
+ * Prinsip:
+ * - CF_gejala = cf_pakar * cf_user
+ * - Gabungkan antecedent rule secara BERURUTAN menggunakan MYCIN (cfCombine)
+ * - Jika rule.cf ada, kalikan hasil gabungan antecedent dengan rule.cf
+ * - Gabungkan kontribusi rule paralel menggunakan cfCombine
+ * - Jika rule.cf tidak tersedia, dianggap 1.0 (sesuai asumsi paper bila tidak disediakan)
  */
+
+/** MYCIN combine: menangani +, -, dan mixed */
 function cfCombine(cf1, cf2) {
-    // Memastikan perhitungan untuk nilai positif
+    if (cf1 === undefined || cf1 === null) return cf2;
+    if (cf2 === undefined || cf2 === null) return cf1;
+
+    // both positive
     if (cf1 >= 0 && cf2 >= 0) {
         return cf1 + cf2 * (1 - cf1);
     }
-    // (Bisa ditambahkan logika untuk CF negatif jika perlu, 
-    // tapi berdasarkan paper, kita hanya menangani nilai positif)
-    return 0; 
+    // both negative
+    if (cf1 <= 0 && cf2 <= 0) {
+        return cf1 + cf2 * (1 + cf1);
+    }
+    // mixed signs
+    const minAbs = Math.min(Math.abs(cf1), Math.abs(cf2));
+    const denom = 1 - minAbs;
+    if (denom === 0) return 0;
+    return (cf1 + cf2) / denom;
 }
-
 
 /**
- * FUNGSI UTAMA: JALANKAN INFERENCE ENGINE
- * Ini adalah fungsi "otak" yang akan dipanggil oleh app.js
+ * Jalankan inference engine mengikuti langkah paper:
+ * - inputPengguna: [{id:'G01', cf_pakar:0.6, cf_user:0.4}, ...]
+ * - allRules: array rule objects (rule.then, rule.if[], optional rule.cf)
+ * - opts: { symptomsMap: {id->symptomObj}, defaultRuleCF: number (default 1.0) }
  *
- * @param {Array} inputPengguna - Daftar gejala yang dipilih user, cth: [{id: 'G01', cf_pakar: 0.6, cf_user: 0.8}, ...]
- * @param {Array} allRules - Daftar semua aturan dari rules.json
- * @returns {Array} - Daftar hasil diagnosis, cth: [{id: 'K003', cf: 0.75}, ...]
+ * Mengembalikan array [{id: 'K005', cf: 0.759232}, ...] diurutkan desc CF.
  */
-function jalankanInferenceEngine(inputPengguna, allRules) {
-    
-    // --- 1. INISIALISASI ---
+function jalankanInferenceEngine(inputPengguna, allRules, opts = {}) {
+    const symptomsMap = opts.symptomsMap || {};
+    const defaultRuleCF = (typeof opts.defaultRuleCF === 'number') ? opts.defaultRuleCF : 1.0; // sesuai paper asumsikan 1
 
-    // `factBaseCF` adalah "meja kerja" kita. 
-    // Isinya adalah semua fakta yang kita ketahui (gejala + penyakit) dan nilai CF-nya.
-    let factBaseCF = {};
+    // Working memory & results
+    const factBaseCF = {};      // id -> cf (gejala + derived diseases)
+    const finalDiseaseCFs = {}; // diseaseId -> cf
+    const firedRuleIDs = new Set();
 
-    // `finalDiseaseCFs` menyimpan hasil akhir CF untuk setiap penyakit.
-    // Ini penting untuk menggabungkan aturan PARALEL.
-    let finalDiseaseCFs = {};
-
-    // `firedRuleIDs` untuk melacak aturan yang sudah dieksekusi agar tidak berulang.
-    let firedRuleIDs = new Set();
-
-    // Pertama, isi `factBaseCF` dengan input dari pengguna
-    // Ini adalah langkah perhitungan pertama di paper 
-    // CF_Gejala = CF_Pakar * CF_User
-    inputPengguna.forEach(input => {
-        const cfGejala = input.cf_pakar * input.cf_user;
+    // 1) Inisialisasi fakta gejala dari input user
+    for (const input of inputPengguna) {
+        if (!input || !input.id) continue;
+        const cfPakar = (typeof input.cf_pakar === 'number') ? input.cf_pakar : (symptomsMap[input.id] ? symptomsMap[input.id].cf_pakar : 0);
+        const cfUser = (typeof input.cf_user === 'number') ? Math.max(0, Math.min(1, input.cf_user)) : 0;
+        const cfGejala = cfPakar * cfUser; // langkah 1 paper
         factBaseCF[input.id] = cfGejala;
-    });
+    }
 
-    console.log("Fact Base Awal (Gejala):", factBaseCF);
-
-
-    // --- 2. PROSES FORWARD CHAINING (BERULANG) ---
-
-    let faktaBaruDitemukan = true; // Flag untuk loop
-    
-    // Kita gunakan do...while untuk memastikan loop berjalan setidaknya satu kali
+    // 2) Forward chaining: ulangi sampai tidak ada rule baru yang fired
+    let anyFired = true;
     do {
-        faktaBaruDitemukan = false;
+        anyFired = false;
 
-        // Iterasi melalui semua aturan di basis pengetahuan
         for (const rule of allRules) {
-            
-            // Cek apakah aturan ini sudah dieksekusi
-            if (firedRuleIDs.has(rule.id)) {
-                continue; // Lanjut ke aturan berikutnya
-            }
+            if (firedRuleIDs.has(rule.id)) continue;
 
-            // Cek apakah SEMUA premis (gejala 'if') ada di 'factBaseCF'
-            const isReadyToFire = rule.if.every(premiseId => {
-                return factBaseCF[premiseId] !== undefined;
-            });
+            const antecedents = rule.if || [];
+            const allPresent = antecedents.every(a => factBaseCF[a] !== undefined);
 
-            // Jika tidak siap (gejala kurang) ATAU sudah dieksekusi, lewati
-            if (!isReadyToFire) {
-                continue; 
-            }
+            if (!allPresent) continue; // belum siap
 
-            // --- Aturan SIAP DIEKSEKUSI ---
-            console.log(`Aturan ${rule.id} siap dieksekusi.`);
-            faktaBaruDitemukan = true;
+            // Rule siap dieksekusi
             firedRuleIDs.add(rule.id);
+            anyFired = true;
 
-            // 1. Ambil nilai CF dari semua premis
-            const premiseCFs = rule.if.map(premiseId => factBaseCF[premiseId]);
+            // Ambil CF tiap premis
+            const premiseCFs = antecedents.map(a => factBaseCF[a]);
 
-            // 2. Hitung CF untuk aturan ini
-            // Kita gabungkan semua CF premisnya satu per satu
-            // cth: CF(G1+G2+G3) = cfCombine(cfCombine(CF(G1), CF(G2)), CF(G3))
-            const cfRule = premiseCFs.reduce((acc, cf) => cfCombine(acc, cf), 0); // Mulai dari 0
+            // Gabungkan premis BERURUTAN menggunakan MYCIN (sesuai paper)
+            // mulai dari premiseCFs[0]
+            let aggregatedAnteCF = premiseCFs[0];
+            for (let i = 1; i < premiseCFs.length; i++) {
+                aggregatedAnteCF = cfCombine(aggregatedAnteCF, premiseCFs[i]);
+            }
 
-            const disease = rule.then;
+            // Terapkan bobot rule jika ada; jika tidak, defaultRuleCF (biasanya 1.0 untuk mengikuti paper)
+            const ruleWeight = (typeof rule.cf === 'number') ? rule.cf : defaultRuleCF;
+            const cfContribution = aggregatedAnteCF * ruleWeight;
 
-            // 3. LOGIKA PARALEL:
-            // Cek apakah penyakit ini sudah ada di hasil akhir (ditemukan oleh aturan lain)
-            const cfOld = finalDiseaseCFs[disease] || 0; // Ambil CF lama, atau 0 jika baru
+            // Gabungkan kontribusi rule (paralel) ke penyakit
+            const conclusion = rule.then;
+            const old = (finalDiseaseCFs[conclusion] !== undefined) ? finalDiseaseCFs[conclusion] : null;
+            const combined = cfCombine(old, cfContribution);
 
-            // Gabungkan CF lama dengan CF aturan baru ini
-            const cfNew = cfCombine(cfOld, cfRule);
-            
-            // Simpan hasil gabungan (paralel)
-            finalDiseaseCFs[disease] = cfNew;
+            finalDiseaseCFs[conclusion] = combined;
 
-            // 4. LOGIKA SEKUENSIAL:
-            // Tambahkan hasil ini ke 'factBaseCF' agar bisa digunakan oleh aturan lain
-            // pada putaran loop berikutnya.
-            factBaseCF[disease] = cfNew; 
+            // Simpan fakta baru (untuk sekuensial)
+            factBaseCF[conclusion] = combined;
         }
 
-    } while (faktaBaruDitemukan); // Ulangi jika ada aturan baru yang dieksekusi
+    } while (anyFired);
 
-
-    // --- 3. FORMAT HASIL AKHIR ---
-    console.log("Hasil Akhir (CFs):", finalDiseaseCFs);
-
-    // Ubah format objek {K001: 0.8, K003: 0.7} menjadi array [{id: 'K001', cf: 0.8}, ...]
-    const hasilArray = Object.keys(finalDiseaseCFs).map(diseaseId => {
-        return {
-            id: diseaseId,
-            cf: finalDiseaseCFs[diseaseId]
-        };
-    });
-
-    return hasilArray;
+    // Format hasil: array terurut desc
+    const hasil = Object.keys(finalDiseaseCFs).map(id => ({ id, cf: finalDiseaseCFs[id] }));
+    hasil.sort((a,b) => b.cf - a.cf);
+    return hasil;
 }
+
+/* expose function ke global agar app.js bisa memanggil */
+window.jalankanInferenceEngine = jalankanInferenceEngine;
