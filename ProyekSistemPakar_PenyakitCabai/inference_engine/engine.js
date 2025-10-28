@@ -1,13 +1,5 @@
 /**
  * inference_engine/engine.js
- * Engine CF + Forward Chaining (mengikuti paper)
- *
- * Prinsip:
- * - CF_gejala = cf_pakar * cf_user
- * - Gabungkan antecedent rule secara BERURUTAN menggunakan MYCIN (cfCombine)
- * - Jika rule.cf ada, kalikan hasil gabungan antecedent dengan rule.cf
- * - Gabungkan kontribusi rule paralel menggunakan cfCombine
- * - Jika rule.cf tidak tersedia, dianggap 1.0 (sesuai asumsi paper bila tidak disediakan)
  */
 
 /** MYCIN combine: menangani +, -, dan mixed */
@@ -31,12 +23,7 @@ function cfCombine(cf1, cf2) {
 }
 
 /**
- * Jalankan inference engine mengikuti langkah paper:
- * - inputPengguna: [{id:'G01', cf_pakar:0.6, cf_user:0.4}, ...]
- * - allRules: array rule objects (rule.then, rule.if[], optional rule.cf)
- * - opts: { symptomsMap: {id->symptomObj}, defaultRuleCF: number (default 1.0) }
- *
- * Mengembalikan array [{id: 'K005', cf: 0.759232}, ...] diurutkan desc CF.
+ * Jalankan inference engine:
  */
 function jalankanInferenceEngine(inputPengguna, allRules, opts = {}) {
     const symptomsMap = opts.symptomsMap || {};
@@ -108,3 +95,4 @@ function jalankanInferenceEngine(inputPengguna, allRules, opts = {}) {
 
 /* expose function ke global agar app.js bisa memanggil */
 window.jalankanInferenceEngine = jalankanInferenceEngine;
+
